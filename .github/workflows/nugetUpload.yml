@@ -1,0 +1,38 @@
+name: .NET
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:    
+      - uses: actions/checkout@v2
+    
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '5.0.x'
+	
+      - name: Install dependencies
+        run: |
+          dotnet restore
+      
+      - name: Build
+        run: |
+          dotnet build --configuration Release --no-restore
+      
+      - name: Pack
+        run: |
+          dotnet pack NetworkCapabilities.csproj -o artifacts/
+
+      - uses: actions/upload-artifact@v1
+        with:
+          name: artifacts
+          path: artifacts
+
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget add source "https://nuget.pkg.github.com/hara-kazu/index.json" -n "github" -u hara-kazu -p ${{secrets.GH_PACKAGES_PAT}} --store-password-in-clear-text
+        dotnet nuget push "*.nupkg" --api-key ${{secrets.GH_PACKAGES_PAT}} --source "github" --skip-duplicate
